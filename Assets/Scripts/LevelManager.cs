@@ -18,8 +18,8 @@ public class LevelManager : MonoBehaviour
     public void Start()
     {
         shotCount = levelData.shotCount;                                  
-        UIManager.instance.ShotText.text = shotCount.ToString();                     
-        GameManager.singleton.gameStatus = GameStatus.Playing;     
+        UIManager.instance.ShotText.text = shotCount.ToString();
+        GameManager.instance.SetStatus(GameStatus.Playing);    
     }
 
     public void NewShot()
@@ -36,23 +36,23 @@ public class LevelManager : MonoBehaviour
 
     public void LevelFailed()
     {
-        if (GameManager.singleton.gameStatus == GameStatus.Playing) 
+        if (GameManager.instance.gameStatus == GameStatus.Playing) 
         {
-            GameManager.singleton.gameStatus = GameStatus.Failed;   
+            GameManager.instance.SetStatus(GameStatus.Failed);
             UIManager.instance.GameResult();                       
         }
     }
 
     public void LevelComplete()
     {
-        if (GameManager.singleton.gameStatus == GameStatus.Playing) 
-        {   
+        if (GameManager.instance.gameStatus == GameStatus.Playing) 
+        {
             /*if (GameManager.singleton.currentLevelIndex < levelData.Length)    
                 GameManager.singleton.currentLevelIndex++;  
             else
                 GameManager.singleton.currentLevelIndex = 0;*/
 
-            GameManager.singleton.gameStatus = GameStatus.Complete; 
+            GameManager.instance.SetStatus(GameStatus.Complete);
             UIManager.instance.GameResult();                        
         }
     }

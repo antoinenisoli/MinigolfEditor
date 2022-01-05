@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using DG.Tweening;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BallController : MonoBehaviour
@@ -7,13 +8,16 @@ public class BallController : MonoBehaviour
     [SerializeField] LineRenderer lineRenderer;     
     [SerializeField] float MaxForce;                
     [SerializeField] float forceModifier = 0.5f;    
-    [SerializeField] LayerMask groundLayer;            
+    [SerializeField] LayerMask groundLayer;
+    [SerializeField] LayerMask obstacleLayer;
+    [SerializeField] Transform visualChildren;
 
     float clampedForce;                                   
     Rigidbody rb;                              
     Vector3 lastPos, groundPoint;
-    bool canShoot = false, ballIsStatic = true;   
     Vector3 direction;
+    public MeshOutline meshOutline;
+    Camera mainCam => CameraFollow.instance.cam;
 
     private void Awake()
     {
@@ -23,24 +27,37 @@ public class BallController : MonoBehaviour
             Destroy(gameObject);
 
         rb = GetComponent<Rigidbody>();
-        InitThrow();
+        meshOutline = GetComponentInChildren<MeshOutline>();
+        lastPos = transform.position;
+
+        lineRenderer.SetPosition(0, lineRenderer.transform.localPosition);
+        lineRenderer.SetPosition(1, lineRenderer.transform.localPosition);
+        lineRenderer.gameObject.SetActive(false);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        visualChildren.DOComplete();
+        visualChildren.DOShakeScale(0.2f, 0.5f, 50);
+
         if (collision.gameObject.CompareTag("InvisibleGround"))
         {
             print("tp");
+            Stop();
             transform.position = lastPos;
         }
     }
 
     public void InitThrow()                                          
     {
-        canShoot = false;
-        lastPos = ClickedPoint();
         lineRenderer.gameObject.SetActive(true);                            
         lineRenderer.SetPosition(0, lineRenderer.transform.localPosition);  
+    }
+
+    public void Stop()
+    {
+        rb.velocity = Vector3.zero;
+        clampedForce = 0;
     }
 
     public void ManageBallForce()                                         
@@ -57,7 +74,10 @@ public class BallController : MonoBehaviour
 
     public void ThrowBall()                                            
     {
-        canShoot = true;                                                  
+        visualChildren.DOComplete();
+        visualChildren.DOShakeScale(0.2f, 0.5f, 50);
+
+        lastPos = transform.position;
         lineRenderer.gameObject.SetActive(false);
         rb.AddForce(direction.normalized * clampedForce, ForceMode.Impulse);
         print(clampedForce);
@@ -69,7 +89,7 @@ public class BallController : MonoBehaviour
     Vector3 ClickedPoint()
     {
         Vector3 position = Vector3.zero;                              
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);    
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);    
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayer))    
             position = hit.point;
 
@@ -82,7 +102,7 @@ public class BallController : MonoBehaviour
         if (Input.GetMouseButton(1))
             CameraRotation.instance.RotateCamera();
 
-        if (rb.velocity == Vector3.zero)
+        if (rb.velocity == Vector3.zero && GameManager.instance.gameStatus == GameStatus.Playing)
         {
             rb.angularVelocity = Vector3.zero;
 
@@ -93,5 +113,10 @@ public class BallController : MonoBehaviour
             if (Input.GetMouseButtonUp(0))
                 ThrowBall();
         }
+    }
+
+    private void FixedUpdate()
+    {
+        meshOutline.enabled = Physics.Linecast(mainCam.transform.position, transform.position, obstacleLayer);
     }
 }

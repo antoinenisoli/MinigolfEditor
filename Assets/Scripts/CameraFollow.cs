@@ -6,7 +6,8 @@ public class CameraFollow : MonoBehaviour
 {
     public static CameraFollow instance;
     private GameObject followTarget;                    
-    private Vector3 basePos;                             
+    private Vector3 basePos;
+    public Camera cam;
 
     private void Awake()
     {
@@ -15,6 +16,7 @@ public class CameraFollow : MonoBehaviour
         else 
             Destroy(gameObject);
 
+        cam = GetComponentInChildren<Camera>();
         SetTarget(FindObjectOfType<BallController>().gameObject);
     }
 

@@ -18,7 +18,7 @@ public class CameraRotation : MonoBehaviour
 
     public void RotateCamera()           
     {
-        smoothRot.y += -Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
+        smoothRot.y += Input.GetAxis("Mouse X") * rotationSpeed;
     }
 
     private void LateUpdate()
