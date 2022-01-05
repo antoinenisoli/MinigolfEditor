@@ -5,10 +5,8 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     public static CameraFollow instance;
-    [SerializeField] private ActiveVectors activeVectors;  
     private GameObject followTarget;                    
-    private Vector3 offset;                                
-    private Vector3 changePos;                             
+    private Vector3 basePos;                             
 
     private void Awake()
     {
@@ -23,28 +21,14 @@ public class CameraFollow : MonoBehaviour
     public void SetTarget(GameObject target)
     {
         followTarget = target;                                          
-        offset = followTarget.transform.position - transform.position;  
-        changePos = transform.position;                                
+        basePos = transform.position;                                
     }
 
     private void LateUpdate()
     {
         if (followTarget)                                              
         {
-            if (activeVectors.x)                                     
-                changePos.x = followTarget.transform.position.x - offset.x;
-            if (activeVectors.y)                                       
-                changePos.y = followTarget.transform.position.y - offset.y;
-            if (activeVectors.z)                                      
-                changePos.z = followTarget.transform.position.z - offset.z;
-
-            transform.position = changePos;                             
+            transform.position = followTarget.transform.position;                             
         }
     }
-}
-
-[System.Serializable]
-public class ActiveVectors
-{
-    public bool x, y, z;
 }

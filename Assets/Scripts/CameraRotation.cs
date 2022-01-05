@@ -2,33 +2,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Script which makes camera rotate around ball
-/// </summary>
 public class CameraRotation : MonoBehaviour
 {
-    [SerializeField] private float rotationSpeed = 0.2f;    //rotation speed
-
+    [SerializeField] private float rotationSpeed = 0.2f; 
     public static CameraRotation instance;
+    Vector3 smoothRot;
 
     private void Awake()
     {
         if (instance == null)
-        {
             instance = this;
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
-    /// <summary>
-    /// Metod called to rotate camera
-    /// </summary>
-    /// <param name="XaxisRotation">Mouse X value</param>
-    public void RotateCamera(float XaxisRotation)           
+    public void RotateCamera()           
     {
-        transform.Rotate(Vector3.down, -XaxisRotation * rotationSpeed); //rotate the camera
+        smoothRot.y += -Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
+    }
+
+    private void LateUpdate()
+    {
+        Quaternion rot = Quaternion.Euler(smoothRot);
+        transform.rotation = Quaternion.Slerp(transform.rotation, rot, 10f * Time.deltaTime);
     }
 }

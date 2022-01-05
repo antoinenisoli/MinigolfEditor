@@ -7,12 +7,11 @@ public class BallController : MonoBehaviour
     [SerializeField] LineRenderer lineRenderer;     
     [SerializeField] float MaxForce;                
     [SerializeField] float forceModifier = 0.5f;    
-    [SerializeField] GameObject areaAffector;       
     [SerializeField] LayerMask groundLayer;            
 
-    float force;                                   
+    float clampedForce;                                   
     Rigidbody rb;                              
-    Vector3 startPos, endPos;
+    Vector3 lastPos, groundPoint;
     bool canShoot = false, ballIsStatic = true;   
     Vector3 direction;
 
@@ -23,45 +22,48 @@ public class BallController : MonoBehaviour
         else
             Destroy(gameObject);
 
-        rb = GetComponent<Rigidbody>();                 
+        rb = GetComponent<Rigidbody>();
+        InitThrow();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnCollisionEnter(Collision collision)
     {
-        if (other.name == "Destroyer")                             
-            LevelManager.instance.LevelFailed();                   
-        else if (other.name == "Hole")                            
-            LevelManager.instance.LevelComplete();                 
+        if (collision.gameObject.CompareTag("InvisibleGround"))
+        {
+            print("tp");
+            transform.position = lastPos;
+        }
     }
 
-    public void MouseDownMethod()                                          
+    public void InitThrow()                                          
     {
-        if(!ballIsStatic) 
-            return;             
-        
-        startPos = ClickedPoint();                                          
+        canShoot = false;
+        lastPos = ClickedPoint();
         lineRenderer.gameObject.SetActive(true);                            
         lineRenderer.SetPosition(0, lineRenderer.transform.localPosition);  
     }
 
-    public void MouseNormalMethod()                                         
+    public void ManageBallForce()                                         
     {
-        if(!ballIsStatic) 
-            return;  
-        
-        endPos = ClickedPoint();                                               
-        force = Mathf.Clamp(Vector3.Distance(endPos, startPos) * forceModifier, 0, MaxForce);  
-        UIManager.instance.PowerBar.fillAmount = force / MaxForce;              
-        lineRenderer.SetPosition(1, transform.InverseTransformPoint(endPos));  
+        groundPoint = ClickedPoint();
+        float force = Vector3.Distance(groundPoint, transform.position) * forceModifier;
+        clampedForce = Mathf.Clamp(force, 0, MaxForce);
+        direction = transform.position - groundPoint;
+        direction.y = 0;
+        UIManager.instance.PowerSlider.value = clampedForce / MaxForce;    
+        lineRenderer.SetPosition(0, transform.position);
+        lineRenderer.SetPosition(1, groundPoint);  
     }
 
-    public void MouseUpMethod()                                            
+    public void ThrowBall()                                            
     {
-        if(!ballIsStatic) 
-            return; 
-        
         canShoot = true;                                                  
-        lineRenderer.gameObject.SetActive(false);                          
+        lineRenderer.gameObject.SetActive(false);
+        rb.AddForce(direction.normalized * clampedForce, ForceMode.Impulse);
+        print(clampedForce);
+        clampedForce = 0;
+        UIManager.instance.PowerSlider.value = clampedForce;
+        LevelManager.instance.NewShot();
     }
 
     Vector3 ClickedPoint()
@@ -69,34 +71,27 @@ public class BallController : MonoBehaviour
         Vector3 position = Vector3.zero;                              
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);    
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayer))    
-            position = hit.point;                                      
+            position = hit.point;
 
+        position.y = transform.position.y;
         return position;                                               
     }
 
     void Update()
     {
-        if (rb.velocity == Vector3.zero && !ballIsStatic)
-        {
-            ballIsStatic = true;
-            LevelManager.instance.ShotTaken();
-            rb.angularVelocity = Vector3.zero;
-            areaAffector.SetActive(true);
-        }
-    }
+        if (Input.GetMouseButton(1))
+            CameraRotation.instance.RotateCamera();
 
-    private void FixedUpdate()
-    {
-        if (canShoot)
+        if (rb.velocity == Vector3.zero)
         {
-            canShoot = false;
-            ballIsStatic = false;
-            direction = startPos - endPos;
-            rb.AddForce(direction * force, ForceMode.Impulse);
-            areaAffector.SetActive(false);
-            UIManager.instance.PowerBar.fillAmount = 0;
-            force = 0;
-            startPos = endPos = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            if (Input.GetMouseButtonDown(0))
+                InitThrow();
+            if (Input.GetMouseButton(0))
+                ManageBallForce();
+            if (Input.GetMouseButtonUp(0))
+                ThrowBall();
         }
     }
 }
